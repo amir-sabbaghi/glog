@@ -1,0 +1,97 @@
+#!/bin/bash
+
+usage () {
+  echo "Usage: architecture"
+  echo ""
+  echo "  architecture   Target architecture. [arm|arm64|i386|x86_64|mips]"
+  echo ""
+  echo " NDKROOT: path of ndk root directory "
+  exit 1
+}
+
+if [ -z "$NDKROOT" ]; then
+  echo " NDKROOT must be set "
+  exit 1
+fi
+
+if [ "$#" -lt 1 ]; then
+  echo "Please supply an architecture name."
+  usage
+fi
+
+if [ -z "$COMPILER" ]; then
+  export COMPILER=4.9
+else
+  export COMPILER
+fi
+
+if [ -z "$VERSION" ]; then
+  echo " VERSION must be set"
+fi
+
+if [ ! -z "$PREFIX" ]; then
+  export PREFIX
+fi
+
+ARCH=$1
+
+case $ARCH in
+  arm )
+    TRIPLE=arm-linux
+    TOOLCHAIN=$TRIPLE-androideabi
+    SYSROOT=$NDKROOT/platforms/android-$VERSION/arch-arm
+    CXXFLAGS="$CXXFLAGS -I$NDKROOT/sources/cxx-stl/gnu-libstdc++/$COMPILER/libs/armeabi-v7a/include"
+    LDFLAGS="$LDFLAGS -L$NDKROOT/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a"
+    ;;
+  arm64 )
+    TRIPLE=aarch64-linux
+    TOOLCHAIN=$TRIPLE-android
+    SYSROOT=$NDKROOT/platforms/android-$VERSION/arch-arm64
+    CXXFLAGS="$CXXFLAGS -I$NDKROOT/sources/cxx-stl/gnu-libstdc++/$COMPILER/libs/arm64-v8a/include"
+    LDFLAGS="$LDFLAGS -L$NDKROOT/sources/cxx-stl/gnu-libstdc++/4.9/libs/arm64-v8a"
+     ;;
+  x86 | x86_64 )
+    TRIPLE=$ARCH
+    TOOLCHAIN=$TRIPLE
+    SYSROOT=$NDKROOT/platforms/android-$VERSION/arch-$ARCH
+    CXXFLAGS="$CXXFLAGS -I$NDKROOT/sources/cxx-stl/gnu-libstdc++/$COMPILER/libs/$ARCH/include"
+    LDFLAGS="$LDFLAGS -L$NDKROOT/sources/cxx-stl/gnu-libstdc++/4.9/libs/$ARCH"
+     ;;
+  mips )
+    TRIPLE=mipsel-linux
+    TOOLCHAIN=$TRIPLE-android
+    SYSROOT=$NDKROOT/platforms/android-$VERSION/arch-mips
+    CXXFLAGS="$CXXFLAGS -I$NDKROOT/sources/cxx-stl/gnu-libstdc++/$COMPILER/libs/mips/include"
+    LDFLAGS="$LDFLAGS -L$NDKROOT/sources/cxx-stl/gnu-libstdc++/4.9/libs/mips"
+     ;;
+  * )
+    usage
+    ;;
+esac
+
+# Binaries
+export CC=`find $NDKROOT/toolchains/$TOOLCHAIN-$COMPILER -name '*gcc' | head -n1`
+export CPP="$CC -E"
+export CXX=`find $NDKROOT/toolchains/$TOOLCHAIN-$COMPILER -name '*g++' | head -n1`
+export LD=`find $NDKROOT/toolchains/$TOOLCHAIN-$COMPILER -name '*ld' | head -n1`
+export RANLIB=`find $NDKROOT/toolchains/$TOOLCHAIN-$COMPILER -name ranlib | head -n1`
+export AR=`find $NDKROOT/toolchains/$TOOLCHAIN-$COMPILER -name ar | head -n1`
+
+# Flags
+export CFLAGS="$CFLAGS --sysroot=$SYSROOT -DANDROID -DHAVE_PREAD"
+export CPPFLAGS="$CPPFLAGS --sysroot=$SYSROOT -DANDROID -DHAVE_PREAD"
+export CXXFLAGS="$CXXFLAGS --sysroot=$SYSROOT -I$NDKROOT/sources/cxx-stl/gnu-libstdc++/$COMPILER/include -I$NDKROOT/sources/cxx-stl/gnu-libstdc++/$COMPILER/include/backward -lgnustl_static"
+export LDFLAGS="$LDFLAGS --sysroot=$SYSROOT -lgnustl_static"
+#export PKG_CONFIG_PATH="$SYSROOT/usr/
+
+# Remove script parameters
+shift 1
+
+# Run configure
+./configure \
+        --prefix="$PREFIX" \
+        --host=$TRIPLE \
+        --enable-static \
+        --disable-shared \
+        $@
+
