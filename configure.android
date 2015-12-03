@@ -51,8 +51,8 @@ case $ARCH in
     LDFLAGS="$LDFLAGS -L$NDKROOT/sources/cxx-stl/gnu-libstdc++/4.9/libs/arm64-v8a"
      ;;
   x86 | x86_64 )
-    TRIPLE=$ARCH
-    TOOLCHAIN=$TRIPLE
+    TRIPLE=$ARCH-unknown-linux
+    TOOLCHAIN=$ARCH
     SYSROOT=$NDKROOT/platforms/android-$VERSION/arch-$ARCH
     CXXFLAGS="$CXXFLAGS -I$NDKROOT/sources/cxx-stl/gnu-libstdc++/$COMPILER/libs/$ARCH/include"
     LDFLAGS="$LDFLAGS -L$NDKROOT/sources/cxx-stl/gnu-libstdc++/4.9/libs/$ARCH"
@@ -91,7 +91,7 @@ shift 1
 ./configure \
         --prefix="$PREFIX" \
         --host=$TRIPLE \
-        --enable-static \
-        --disable-shared \
+        --disable-static \
+        --enable-shared \
         $@
 
